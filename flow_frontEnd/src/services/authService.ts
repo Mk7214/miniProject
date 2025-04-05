@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Use environment variables with fallback to local development URL
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+// Use environment variables with fallback to backend Vercel URL
+const API_URL = import.meta.env.VITE_API_URL || 'https://your-backend-url.vercel.app/api';
 
 interface SignupData {
   username: string;
