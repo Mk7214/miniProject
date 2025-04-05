@@ -1,4 +1,12 @@
-require('dotenv').config();
+try {
+  require('dotenv').config();
+} catch (err) {
+  console.error('Error loading dotenv, using process.env without it');
+  // You can set defaults here if needed
+  // process.env.PORT = process.env.PORT || 5000;
+  // process.env.MONGO_URI = process.env.MONGO_URI || 'your_default_uri';
+}
+
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');

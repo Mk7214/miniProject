@@ -129,7 +129,8 @@ const Login = () => {
                   className="h-4 w-4 rounded bg-gray-100 dark:bg-[#1c1c1c] border-gray-400 dark:border-gray-600 data-[state=checked]:bg-blue-500 dark:data-[state=checked]:bg-blue-600"
                 >
                   <Checkbox.Indicator>
-                    <CheckIcon className="h-4 w-4 text-white dark:border-white border-black " />
+                    <CheckIcon className="h-4 w-4 text-white dark:border-white border-black
+                     " />
                   </Checkbox.Indicator>
                 </Checkbox.Root>
                 <Label htmlFor="remember-me" className="text-gray-700 dark:text-gray-400">Remember me</Label>
