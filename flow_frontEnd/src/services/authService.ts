@@ -23,6 +23,7 @@ interface AuthResponse {
   success: boolean;
   message?: string;
   user?: User;
+  token?: string;
 }
 
 // Create axios instance with default config
@@ -61,101 +62,84 @@ api.interceptors.response.use(
 );
 
 export const authService = {
-  async signup(data: SignupData): Promise<AuthResponse> {
-    const response = await api.post('/signup', data);
-    if (response.data.success) {
-      // Set a flag in localStorage to indicate successful signup
-      localStorage.setItem('authStatus', 'authenticated');
-    }
-    return response.data;
-  },
-
-  async login(data: LoginData): Promise<AuthResponse> {
-    const response = await api.post('/login', data);
-    if (response.data.success) {
-      // Set a flag in localStorage to indicate successful login
-      localStorage.setItem('authStatus', 'authenticated');
-    }
-    return response.data;
-  },
-
-  async logout(): Promise<void> {
-    await api.post('/logout');
-    localStorage.removeItem('authStatus');
-  },
-
-  // Helper method to check if user is authenticated
-  isAuthenticated(): boolean {
-    // Check both cookie and localStorage
-    return document.cookie.includes('token=') || localStorage.getItem('authStatus') === 'authenticated';
-  },
-
-  async getCurrentUser(): Promise<AuthResponse> {
+  async signup(userData: SignupData): Promise<AuthResponse> {
     try {
-      console.log('Fetching user data from:', `${API_URL}/me`);
-      console.log('Current cookies:', document.cookie);
-      
-      const response = await api.get('/me');
-      console.log('User data response:', response.data);
+      const response = await api.post('/auth/signup', userData);
+      if (response.data.success) {
+        localStorage.setItem('authStatus', 'authenticated');
+        if (response.data.token) {
+          localStorage.setItem('token', response.data.token);
+          localStorage.setItem('user', JSON.stringify(response.data.user));
+        }
+      }
       return response.data;
-    } catch (error: any) {
-      console.error('Get current user error:', error);
-      if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        console.error('Error response:', error.response.data);
-        console.error('Error status:', error.response.status);
-        console.error('Error headers:', error.response.headers);
-        console.error('Error config:', error.config);
-      } else if (error.request) {
-        // The request was made but no response was received
-        console.error('No response received:', error.request);
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        console.error('Error message:', error.message);
-      }
-      throw new Error(error.response?.data?.message || 'Failed to get user data');
-    }
-  },
-
-  login: async (credentials) => {
-    try {
-      const response = await axios.post(`${API_URL}/users/login`, credentials);
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        return { success: true, data: response.data };
-      }
-      return { success: false, message: 'Invalid credentials' };
-    } catch (error) {
-      console.error('Login error:', error);
-      throw error;
-    }
-  },
-
-  signup: async (userData) => {
-    try {
-      const response = await axios.post(`${API_URL}/users/register`, userData);
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        return { success: true, data: response.data };
-      }
-      return { success: false, message: 'Registration failed' };
     } catch (error) {
       console.error('Signup error:', error);
       throw error;
     }
   },
 
-  logout: () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+  async login(credentials: LoginData): Promise<AuthResponse> {
+    try {
+      const response = await api.post('/auth/login', credentials);
+      if (response.data.success) {
+        localStorage.setItem('authStatus', 'authenticated');
+        if (response.data.token) {
+          localStorage.setItem('token', response.data.token);
+          localStorage.setItem('user', JSON.stringify(response.data.user));
+        }
+      }
+      return response.data;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   },
 
-  isAuthenticated: () => {
-    const token = localStorage.getItem('token');
-    return !!token;
+  async logout(): Promise<void> {
+    try {
+      await api.post('/auth/logout');
+      localStorage.removeItem('authStatus');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still remove local storage items even if the server request fails
+      localStorage.removeItem('authStatus');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      throw error;
+    }
+  },
+
+  // Helper method to check if user is authenticated
+  isAuthenticated(): boolean {
+    // Check both cookie and localStorage
+    return document.cookie.includes('token=') || 
+           localStorage.getItem('authStatus') === 'authenticated' ||
+           !!localStorage.getItem('token');
+  },
+
+  async getCurrentUser(): Promise<AuthResponse> {
+    try {
+      console.log('Fetching user data from:', `${API_URL}/auth/me`);
+      console.log('Current cookies:', document.cookie);
+      
+      const response = await api.get('/auth/me');
+      console.log('User data response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Get current user error:', error);
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        console.error('Error status:', error.response.status);
+      } else if (error.request) {
+        console.error('No response received:', error.request);
+      } else {
+        console.error('Error message:', error.message);
+      }
+      throw new Error(error.response?.data?.message || 'Failed to get user data');
+    }
   },
 
   getToken: () => {
