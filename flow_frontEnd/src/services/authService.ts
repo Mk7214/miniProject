@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api/auth';
+// Use environment variables with fallback to local development URL
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 interface SignupData {
   username: string;
@@ -115,5 +116,54 @@ export const authService = {
       }
       throw new Error(error.response?.data?.message || 'Failed to get user data');
     }
+  },
+
+  login: async (credentials) => {
+    try {
+      const response = await axios.post(`${API_URL}/users/login`, credentials);
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        return { success: true, data: response.data };
+      }
+      return { success: false, message: 'Invalid credentials' };
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
+  },
+
+  signup: async (userData) => {
+    try {
+      const response = await axios.post(`${API_URL}/users/register`, userData);
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        return { success: true, data: response.data };
+      }
+      return { success: false, message: 'Registration failed' };
+    } catch (error) {
+      console.error('Signup error:', error);
+      throw error;
+    }
+  },
+
+  logout: () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  },
+
+  isAuthenticated: () => {
+    const token = localStorage.getItem('token');
+    return !!token;
+  },
+
+  getToken: () => {
+    return localStorage.getItem('token');
+  },
+
+  getUser: () => {
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : null;
   }
 }; 
