@@ -1,7 +1,24 @@
 import axios from 'axios';
 
 // Use environment variables with fallback to backend Vercel URL
-const API_URL = import.meta.env.VITE_API_URL || 'https://your-actual-backend-url.vercel.app/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://flow-backend.vercel.app/api';
+
+// Initialize: Check if user data exists in localStorage on module load
+(() => {
+  try {
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    
+    if (token && user) {
+      console.log('Found existing auth data on initialization');
+      localStorage.setItem('authStatus', 'authenticated');
+    } else {
+      console.log('No existing auth data found on initialization');
+    }
+  } catch (error) {
+    console.error('Error checking auth initialization:', error);
+  }
+})();
 
 interface SignupData {
   username: string;
@@ -90,14 +107,33 @@ export const authService = {
 
   async login(credentials: LoginData): Promise<AuthResponse> {
     try {
+      console.log('Attempting login with:', { email: credentials.email, passwordProvided: !!credentials.password });
       const response = await api.post('/auth/login', credentials);
+      console.log('Login response:', response.data);
+      
       if (response.data.success) {
+        // Store authentication status
         localStorage.setItem('authStatus', 'authenticated');
+        
+        // Handle token storage
         if (response.data.token) {
+          console.log('Token received, storing in localStorage');
           localStorage.setItem('token', response.data.token);
-          localStorage.setItem('user', JSON.stringify(response.data.user));
+          
+          // Store user info if available
+          if (response.data.user) {
+            console.log('User data received, storing in localStorage');
+            localStorage.setItem('user', JSON.stringify(response.data.user));
+          }
+        } else {
+          console.warn('No token received in login response');
         }
+        
+        // Verify token was saved correctly
+        const savedToken = localStorage.getItem('token');
+        console.log('Saved token verification:', savedToken ? 'Token saved successfully' : 'Failed to save token');
       }
+      
       return response.data;
     } catch (error) {
       console.error('Login error:', error);
@@ -132,27 +168,66 @@ export const authService = {
   async getCurrentUser(): Promise<AuthResponse> {
     try {
       const token = localStorage.getItem('token');
+      const authStatus = localStorage.getItem('authStatus');
+      const user = localStorage.getItem('user');
+      
+      console.log('Auth check - Token exists:', !!token);
+      console.log('Auth check - Auth status:', authStatus);
+      console.log('Auth check - User data exists:', !!user);
+      
       if (!token) {
+        // Try to use existing user data if available
+        if (user && authStatus === 'authenticated') {
+          console.log('No token, but using cached user data');
+          return {
+            success: true,
+            user: JSON.parse(user)
+          };
+        }
+        
+        console.error('No authentication token found and no cached user data');
         throw new Error('No authentication token found');
       }
       
       console.log('Fetching user data from:', `${API_URL}/auth/me`);
-      console.log('Using token:', token ? 'Yes (token exists)' : 'No token found');
+      console.log('Using token:', token.substring(0, 10) + '...');
       
       const response = await api.get('/auth/me');
       console.log('User data response:', response.data);
+      
+      // Cache the user data
+      if (response.data.success && response.data.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
+      
       return response.data;
     } catch (error: any) {
       console.error('Get current user error:', error);
+      
+      // Check if we have cached user data as fallback
+      const user = localStorage.getItem('user');
+      const authStatus = localStorage.getItem('authStatus');
+      
+      if (user && authStatus === 'authenticated') {
+        console.log('Using cached user data due to API error');
+        return {
+          success: true,
+          user: JSON.parse(user)
+        };
+      }
+      
       if (error.response) {
         console.error('Error response:', error.response.data);
         console.error('Error status:', error.response.status);
-      } else if (error.request) {
-        console.error('No response received:', error.request);
-      } else {
-        console.error('Error message:', error.message);
-      }
-      throw new Error(error.response?.data?.message || 'Failed to get user data');
+        
+        // Handle specific error cases
+        if (error.response.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('authStatus');
+        }
+      } 
+      
+      throw new Error(error.response?.data?.message || error.message || 'Failed to get user data');
     }
   },
 

@@ -69,9 +69,10 @@ const Navigation = () => {
 
   // Function to reset selection and return to home state
   const resetSelection = () => {
-    navigate("/");
+    console.log("Reset selection called from Navigation component");
     setTopic(null);
     setError(null);
+    navigate("/");
   };
 
   const renderContent = () => {

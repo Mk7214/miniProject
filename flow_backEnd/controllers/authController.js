@@ -7,9 +7,11 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 exports.signup = async (req, res) => {
     try {
         const { username, email, password } = req.body;
+        console.log('Signup attempt:', { username, email });
         
         const userExists = await User.findOne({ $or: [{ email }, { username }] });
         if (userExists) {
+            console.log('User already exists:', email);
             return res.status(400).json({ success: false, message: 'User already exists' });
         }
 
@@ -23,6 +25,7 @@ exports.signup = async (req, res) => {
         });
 
         await user.save();
+        console.log('User created successfully:', { username, email });
         
         const token = jwt.sign(
             { id: user._id },
@@ -30,6 +33,7 @@ exports.signup = async (req, res) => {
             { expiresIn: '24h' }
         );
 
+        // Set token as cookie (for same-origin requests)
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -37,9 +41,11 @@ exports.signup = async (req, res) => {
             maxAge: 24 * 60 * 60 * 1000 // 24 hours
         });
 
+        // Return token in response body (for cross-origin requests)
         res.status(201).json({
             success: true,
             message: 'User created successfully',
+            token: token,
             user: {
                 name: user.username,
                 email: user.email
@@ -54,23 +60,29 @@ exports.signup = async (req, res) => {
 exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
+        console.log('Login attempt:', email);
 
         const user = await User.findOne({ email });
         if (!user) {
+            console.log('User not found:', email);
             return res.status(400).json({ success: false, message: 'Invalid credentials' });
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
+            console.log('Password mismatch for user:', email);
             return res.status(400).json({ success: false, message: 'Invalid credentials' });
         }
 
+        console.log('Login successful for user:', email);
+        
         const token = jwt.sign(
             { id: user._id },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
 
+        // Set token as cookie (for same-origin requests)
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -78,9 +90,11 @@ exports.login = async (req, res) => {
             maxAge: 24 * 60 * 60 * 1000 // 24 hours
         });
 
+        // Return token in response body (for cross-origin requests)
         res.json({
             success: true,
             message: 'Login successful',
+            token: token, // Include token in response
             user: {
                 name: user.username,
                 email: user.email
