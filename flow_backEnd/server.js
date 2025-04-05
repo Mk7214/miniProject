@@ -20,9 +20,10 @@ app.use(cookieParser());
 
 // Configure CORS for Vercel deployment
 const allowedOrigins = [
-  process.env.FRONTEND_URL || 'https://flow-frontend.vercel.app', // Production frontend
-  'http://localhost:5173', // Local development frontend
-  'http://localhost:3000' // Alternative local development
+  process.env.FRONTEND_URL || 'https://mini-project-qvfn.vercel.app', // Production frontend
+  'https://mini-project-qvfn.vercel.app',                            // Hard-coded frontend URL
+  'http://localhost:5173',                                            // Local development frontend
+  'http://localhost:3000'                                             // Alternative local development
 ];
 
 app.use(cors({
@@ -34,12 +35,14 @@ app.use(cors({
         callback(null, true);
       } else {
         console.log('CORS blocked for:', origin);
-        callback(null, true); // Temporarily allow all origins in development
+        console.log('Allowed origins:', allowedOrigins);
+        // For Vercel deployment, temporarily allow all origins
+        callback(null, true);
       }
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 // Log all requests

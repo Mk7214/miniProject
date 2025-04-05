@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Use environment variables with fallback to backend Vercel URL
-const API_URL = import.meta.env.VITE_API_URL || 'https://your-backend-url.vercel.app/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://your-actual-backend-url.vercel.app/api';
 
 interface SignupData {
   username: string;
@@ -36,10 +36,19 @@ const api = axios.create({
   },
 });
 
-// Add request interceptor for logging
+// Add request interceptor for adding auth token and logging
 api.interceptors.request.use(
   (config) => {
+    // Get token from localStorage
+    const token = localStorage.getItem('token');
+    
+    // If token exists, add it to the Authorization header
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    
     console.log('Making request to:', config.url);
+    console.log('With headers:', config.headers);
     console.log('With cookies:', document.cookie);
     return config;
   },
@@ -122,8 +131,13 @@ export const authService = {
 
   async getCurrentUser(): Promise<AuthResponse> {
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
       console.log('Fetching user data from:', `${API_URL}/auth/me`);
-      console.log('Current cookies:', document.cookie);
+      console.log('Using token:', token ? 'Yes (token exists)' : 'No token found');
       
       const response = await api.get('/auth/me');
       console.log('User data response:', response.data);
