@@ -22,12 +22,22 @@ const userSchema = new mongoose.Schema({
             ref: 'Roadmap'
         },
         completedTopics: [{
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Topic'
+            topic: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Topic'
+            },
+            completedAt: {
+                type: Date,
+                default: Date.now
+            }
         }],
         percentageComplete: {
             type: Number,
             default: 0
+        },
+        lastAccessedAt: {
+            type: Date,
+            default: Date.now
         }
     }]
 }, { timestamps: true });

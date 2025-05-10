@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useParams, useNavigate } from "react-router-dom"
+import { useParams, useNavigate, Link } from "react-router-dom"
 import NavMenu from "./NavMenu"
 import { roadmapService } from "@/services/roadmapService"
 import { useToast } from "@/hooks/use-toast"
@@ -19,6 +19,12 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { UserProgressStats } from "@/components/UserProgressStats"
+import { ActiveRoadmaps } from "@/components/ActiveRoadmaps"
+import { RecentTopics } from "@/components/RecentTopics"
+import { Bookmark } from "lucide-react"
+import { Bookmarks } from "@/components/Bookmarks"
+import { PopularTopics } from "@/components/PopularTopics"
 
 interface Topic {
   title: string;
@@ -33,7 +39,22 @@ interface Resource {
   type: string;
 }
 
-const Navigation = () => {
+interface UserProgress {
+  roadmap: {
+    _id: string;
+    title: string;
+  };
+  completedTopics: string[];
+  percentageComplete: number;
+}
+
+interface RecentTopic {
+  title: string;
+  roadmapTitle: string;
+  completedAt: string;
+}
+
+const Navigation = ({ showBookmarks = false }) => {
   const { roadmapId, topicIndex } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -49,8 +70,16 @@ const Navigation = () => {
           setTopic(null);
           return;
         }
-        const data = await roadmapService.getTopic(roadmapId, parseInt(topicIndex));
-        setTopic(data);
+        
+        // First try to fetch by ID directly
+        try {
+          const data = await roadmapService.getTopic(roadmapId, topicIndex);
+          setTopic(data);
+        } catch (error) {
+          // If that fails, try as index (for backward compatibility)
+          const data = await roadmapService.getTopic(roadmapId, parseInt(topicIndex));
+          setTopic(data);
+        }
       } catch (error: any) {
         console.error('Failed to fetch topic:', error);
         setError(error.message);
@@ -86,14 +115,42 @@ const Navigation = () => {
       );
     }
 
+    if (showBookmarks) {
+      return (
+        <div className="p-6">
+          <Bookmarks />
+        </div>
+      );
+    }
+
     if (error || !topic) {
       return (
         <div className="p-6">
-          <div className="text-lg font-medium text-zinc-500 dark:text-zinc-400 text-center py-16">
-            No content selected
-            <p className="text-sm mt-2 text-zinc-400 dark:text-zinc-500">
-              Select a topic from the sidebar to view its content
-            </p>
+          <div className="space-y-8">
+            {/* User Progress Overview */}
+            <div className="rounded-lg border p-6 dark:border-zinc-500">
+              <h2 className="text-2xl font-bold mb-4 text-black dark:text-white">Your Learning Progress</h2>
+              <UserProgressStats />
+            </div>
+
+
+            {/* Active Roadmaps */}
+            <div className="rounded-lg border p-6 dark:border-zinc-500">
+              <h2 className="text-2xl font-bold mb-4 text-black dark:text-white">Active Roadmaps</h2>
+              <ActiveRoadmaps />
+            </div>
+
+            {/* Recent Activity */}
+            <div className="rounded-lg border p-6 dark:border-zinc-500">
+              <h2 className="text-2xl font-bold mb-4 text-black dark:text-white">Recent Activity</h2>
+              <RecentTopics />
+            </div>
+                        {/* Popular Topics */}
+                        <div className="rounded-lg border p-6 dark:border-zinc-500">
+              <h2 className="text-2xl font-bold mb-4 text-black dark:text-white">Most Viewed Topics</h2>
+              <PopularTopics />
+            </div>
+
           </div>
         </div>
       );
@@ -137,7 +194,15 @@ const Navigation = () => {
 
   return (
     <SidebarProvider>
-      <NavMenu onResetSelection={resetSelection} />
+      <NavMenu onResetSelection={resetSelection}>
+        <Link 
+          to="/bookmarks" 
+          className="flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        >
+          <Bookmark className="h-4 w-4" />
+          <span>Your Bookmarks</span>
+        </Link>
+      </NavMenu>
       <SidebarInset className="dark:bg-zinc-900 bg-white border-black/70 dark:border-white/20 border-2">
         <header className="flex h-16 shrink-0 items-center gap-2">
           <div className="flex items-center gap-2 px-4">

@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom"
 import { authService } from "@/services/authService"
 import { useEffect, useState } from "react"
 import { useToast } from "@/hooks/use-toast"
-
+import { User as AuthUser } from "@/services/authService"
 
 import {
   Avatar,
@@ -37,8 +37,11 @@ import {
 } from "@/components/ui/sidebar"
 
 interface User {
-  name: string  // This is the username from the backend
-  email: string
+  id?: string;
+  _id?: string;
+  username: string;
+  email: string;
+  name?: string; // Optional since it might come from username
 }
 
 const NavUser = () => {
@@ -54,15 +57,26 @@ const NavUser = () => {
       setLoading(true)
       setError(null)
       console.log('Fetching user data...')
+      
+      // Check if we're authenticated first
+      if (!authService.isAuthenticated()) {
+        setLoading(false)
+        navigate('/login')
+        return
+      }
+      
       const response = await authService.getCurrentUser()
       console.log('User data response:', response)
       
       if (response.success && response.user) {
-        setUser(response.user)
-        toast({
-          title: "Success",
-          description: "User data loaded successfully",
-        })
+        // Map auth user to our component's user type
+        const mappedUser: User = {
+          id: response.user.id || response.user._id,
+          username: response.user.username,
+          email: response.user.email,
+          name: response.user.name || response.user.username // Use name if provided, fallback to username
+        }
+        setUser(mappedUser)
       } else {
         throw new Error(response.message || 'Failed to fetch user data')
       }
@@ -70,23 +84,29 @@ const NavUser = () => {
       console.error('Failed to fetch user:', error)
       const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch user data'
       setError(errorMessage)
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: errorMessage,
-      })
+      
+      // If we get a 401, redirect to login
+      if (error.response?.status === 401) {
+        navigate('/login')
+        return
+      }
+      
+      // Only show error toast if we're actually authenticated
+      if (authService.isAuthenticated()) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: errorMessage,
+        })
+      }
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    if (authService.isAuthenticated()) {
-      fetchUser()
-    } else {
-      setLoading(false)
-    }
-  }, [toast])
+    fetchUser()
+  }, []) // Remove toast and navigate from dependencies to prevent infinite loop
 
   
   if (loading) {
@@ -158,6 +178,7 @@ const NavUser = () => {
   const handleLogout = async () => {
     try {
       await authService.logout()
+      setUser(null)
       toast({
         title: "Success",
         description: "Logged out successfully",

@@ -10,14 +10,12 @@ module.exports = [
                   {
                       type: "video",
                       title: "JavaScript Full Course for Beginners",
-                      url: "https://www.youtube.com/watch?v=PkZNo7MFNFg",
-                      platform: "freeCodeCamp"
+                      url: "https://www.youtube.com/watch?v=PkZNo7MFNFg"
                   },
                   {
                       type: "article",
                       title: "JavaScript MDN Guide",
-                      url: "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide",
-                      platform: "MDN"
+                      url: "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide"
                   }
               ],
               subtopics: [

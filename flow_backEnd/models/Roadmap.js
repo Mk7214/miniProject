@@ -5,22 +5,26 @@ const roadmapSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    description: String,
+    description: {
+        type: String
+    },
     topics: [{
-        title: String,
-        description: String,
-        resources: [{
-            type: {
-                type: String,
-                enum: ['video', 'article', 'course']
-            },
-            title: String,
-            url: String,
-            platform: String
-        }],
-        order: Number
-    }]
-});
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Topic'
+    }],
+    category: {
+        type: String
+    },
+    difficulty: {
+        type: String,
+        enum: ['beginner', 'intermediate', 'advanced'],
+        default: 'beginner'
+    },
+    author: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }
+}, { timestamps: true });
 
 const webDevRoadmap = {
     title: "Web Development",

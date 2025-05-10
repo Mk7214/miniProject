@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Roadmap = require('../models/Roadmap');
+const Topic = require('../models/Topic');
 const roadmapData = require('../data/roadmapData');
 
 require('dotenv').config();
@@ -10,15 +11,40 @@ const seedRoadmaps = async () => {
         await mongoose.connect(process.env.MONGO_URI);
         console.log('Connected to MongoDB Atlas');
 
-        // Clear existing roadmaps
+        // Clear existing data
         await Roadmap.deleteMany({});
-        console.log('Cleared existing roadmaps');
+        await Topic.deleteMany({});
+        console.log('Cleared existing roadmaps and topics');
 
-        // Insert new roadmaps
-        const roadmaps = await Roadmap.insertMany(roadmapData);
-        console.log(`Successfully inserted ${roadmaps.length} roadmaps`);
+        // Process each roadmap
+        for (const roadmapItem of roadmapData) {
+            // Create topic documents first
+            const topicPromises = roadmapItem.topics.map(async (topicData) => {
+                const topic = new Topic({
+                    title: topicData.title,
+                    description: topicData.description,
+                    resources: topicData.resources,
+                    subtopics: topicData.subtopics,
+                    order: topicData.order
+                });
+                
+                await topic.save();
+                return topic._id;
+            });
+            
+            const topicIds = await Promise.all(topicPromises);
+            
+            // Create the roadmap with topic references
+            const roadmap = new Roadmap({
+                title: roadmapItem.title,
+                description: roadmapItem.description,
+                topics: topicIds
+            });
+            
+            await roadmap.save();
+        }
 
-        // Close the connection
+        console.log('Database seeded successfully');
         await mongoose.connection.close();
         console.log('Database connection closed');
     } catch (error) {

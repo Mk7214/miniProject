@@ -2,10 +2,10 @@ import { Sidebar, SidebarProvider } from '@/components/ui/sidebar';
 import react , {useState} from 'react';
 import Navigation from '@/components/Navigation';
 
-const Home = () => {
+const Home = ({ bookmarksView = false }) => {
     return (
-        <div>
-           <Navigation/>
+        <div className="min-h-screen">
+           <Navigation showBookmarks={bookmarksView}/>
         </div>
     )
 }

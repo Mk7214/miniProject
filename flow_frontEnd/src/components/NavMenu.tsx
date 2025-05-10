@@ -5,15 +5,18 @@ import {
   Command,
   Frame,
   LifeBuoy,
+  Link as LinkIcon,
   Map,
   PieChart,
   Send,
   Settings2,
   SquareTerminal,
+  Bookmark,
 } from "lucide-react"
 import LogoutButton from "./LogoutButton"
 import { ThemeToggle } from "./ui/theme-toggle"
-
+import { Link } from "react-router-dom"
+import { BookMark } from "./ui/BookMark"
 import NavMain from "@/components/NavMain"
 import NavUser from "@/components/NavUser"
 import {
@@ -25,6 +28,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { Button } from "./ui/button"
 
 interface NavMenuProps extends React.ComponentProps<typeof Sidebar> {
   onResetSelection?: () => void;
@@ -64,6 +68,12 @@ const NavMenu = ({ onResetSelection, ...props }: NavMenuProps) => {
         <NavMain />
       </SidebarContent>
       <SidebarFooter className="bg-white dark:bg-zinc-900">
+        <Link to="/bookmarks" className="w-full">
+          <Button className="w-full flex items-center gap-2 justify-center">
+            <Bookmark className="h-4 w-4" />
+            <span>Your Bookmarks</span>
+          </Button>
+        </Link>
         <div className="flex items-center gap-2 justify-between p-2">
           <LogoutButton className="flex-1" />
           <ThemeToggle />
